@@ -1,49 +1,67 @@
-import { Play } from "phosphor-react";
-import { CountDownContainer, FormContainer, HomeContainer, MinutesAmountInput, SeparatorContainer, StartCountDownButton, TaskInput } from "./styles";
+import { HandPalm, Play } from "phosphor-react";
+import { HomeContainer, StartCountDownButton, StopCountDownButton } from "./styles";
+import { FormProvider, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as zod from 'zod';
+import { CountDown } from "./CountDown";
+import { NewCycleForm } from "./NewCycleForm";
+import { useContext } from "react";
+import { CyclesContext } from "../../contexts/CyclesContext";
+
+const newCycleFormValidationSchema = zod.object({
+    task: zod
+        .string()
+        .min(1, 'Informe a tarefa'),
+    minutesAmount: zod
+        .number()
+        .min(0)
+        .max(60),
+});
+
+type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>;
 
 export function Home() {
+    const { createNewCycle, activeCycle, stopCountDown } = useContext(CyclesContext);
+
+    const newCycleForm = useForm<NewCycleFormData>({
+        resolver: zodResolver(newCycleFormValidationSchema),
+        defaultValues: {
+            minutesAmount: 5,
+            task: '',
+        },
+    });
+
+    const handleCreateNewCycle = (data: NewCycleFormData) => {
+        createNewCycle(data);
+        reset();
+    }
+
+    const { handleSubmit, watch, reset} = newCycleForm;
+
     return (
         <HomeContainer>
-            <form action="#">
-                <FormContainer>
-                    <label htmlFor="task">Vou trabalhar em</label>
-                    <TaskInput 
-                        type="text" 
-                        list="task-suggestion"
-                        id="task"
-                        placeholder="Dê um nome para o seu projeto" 
-                    />
-                    <datalist id="task-suggestion">
-                        <option value="Projeto 1">Projeto 1</option>
-                        <option value="Projeto 2">Projeto 2</option>
-                        <option value="Projeto 3">Projeto 3</option>
-                        <option value="Projeto 4">Projeto 4</option>
-                    </datalist>
+            <form action="#" onSubmit={handleSubmit(handleCreateNewCycle)}>
 
-                    <label htmlFor="minutesAmount">Durante</label>
-                    <MinutesAmountInput 
-                        type="number" 
-                        id="minutesAmount" 
-                        placeholder="00"
-                        step="5"
-                        min="5"
-                        max="60"
-                    />
-                    <span>minutos.</span>
-                </FormContainer>
-
-                <CountDownContainer>
-                    <span>0</span>
-                    <span>0</span>
-                    <SeparatorContainer>:</SeparatorContainer>
-                    <span>0</span>
-                    <span>0</span>
-                </CountDownContainer>
-
-                <StartCountDownButton type="submit">
-                    <Play size={24}></Play>
-                    Começar
-                </StartCountDownButton>
+                <FormProvider {...newCycleForm}>
+                    <NewCycleForm />
+                </FormProvider>
+                <CountDown />
+                {!activeCycle ?
+                    (
+                        <StartCountDownButton disabled={!watch('task')} type="submit">
+                            <Play size={24}></Play>
+                            Começar
+                        </StartCountDownButton>
+                    ) : (
+                        <StopCountDownButton 
+                            type="button"
+                            onClick={stopCountDown}
+                        >
+                            <HandPalm size={24}></HandPalm>
+                            Interromper
+                        </StopCountDownButton>
+                    )
+                }
             </form>
         </HomeContainer>
     )
